@@ -5,6 +5,7 @@
 import sublime
 import sublime_plugin
 import json
+import codecs
 
 # Takes an array of commands (same as those you'd provide to a key binding) with
 # an optional context (defaults to view commands) & runs each command in order.
@@ -42,7 +43,8 @@ class RunMultipleCommandsCommand(sublime_plugin.WindowCommand):
 
     def run(self, commands=None, file_name=None, validate_context=True):
         if file_name is not None:
-            commands = self.read_command_file(file_name)
+            content = self.get_file_content(file_name)
+            commands = self.read_command_file(content)
         if self.is_validate_arguments(commands, validate_context):
             cmd_len = len(commands)
             for i in range(cmd_len):
@@ -53,8 +55,14 @@ class RunMultipleCommandsCommand(sublime_plugin.WindowCommand):
                 else:
                     self.exec_command(command)
 
-    def read_command_file(self, file_name):
-        content = "foo" # Read JSON file
+    def get_file_content(self, file_name):
+        content = None
+        if os.path.exists(file_name):
+            with codecs.open(filename, "r") as file_obj:
+                content = file_obj.read()
+        return content
+
+    def from_json(self, content):
         if content is not None:
             try:
                 return json.loads(content)

@@ -6,15 +6,18 @@ import sublime_plugin
 import json
 import codecs
 import os
+import re
 
-# Takes an array of commands (same as those you'd provide to a key binding) with
-# an optional context (defaults to view commands) & runs each command in order.
-# Valid contexts are 'text', 'window', and 'app' for running a TextCommand,
-# WindowCommands, or ApplicationCommand respectively.
+from .package_resources import get_resource
 
-# Should be inherited by something that extends WindowCommand
+# Takes an array of commands (same as those you'd provide to a key binding)
+# with an optional context (defaults to view commands) & runs each command in
+# order. Valid contexts are 'text', 'window', and 'app' for running a
+# TextCommand, WindowCommand, or ApplicationCommand respectively.
+
+
 class RunMultipleCommandsBase(object):
-
+    # Should be inherited by something that extends WindowCommand
     DELAY_KEY = "delay"
     VALID_CONTEXT = ["text", "window", "app"]
 
@@ -27,10 +30,10 @@ class RunMultipleCommandsBase(object):
         if 'args' in command:
             args = command['args']
 
-        # default context is the view since it's easiest to get the other contexts
-        # from the view
+        # default context is the view since it's easiest to get the other
+        # contexts from the view
         context = self.get_context(command)
-
+        print(command)
         if args is None:
             context.run_command(command['command'])
         else:
@@ -47,6 +50,7 @@ class RunMultipleCommandsBase(object):
         return context
 
     def run_multiple_commands(self, commands, validate_context):
+
         if self.is_validate_arguments(commands, validate_context):
             cmd_len = len(commands)
             for i in range(cmd_len):
@@ -56,7 +60,6 @@ class RunMultipleCommandsBase(object):
                     break
                 else:
                     self.exec_command(command)
-        pass
 
     def get_file_content(self, file_name):
         content = None
@@ -78,10 +81,9 @@ class RunMultipleCommandsBase(object):
         delay = new_commands[0][self.DELAY_KEY]
         new_commands[0][self.DELAY_KEY] = 0
         args = {"commands": new_commands}
-        print(new_commands)
-        print(delay)
         sublime.set_timeout(
-            lambda: self.window.run_command("run_multiple_commands_delayed", args), delay)
+            lambda: self.window.run_command("run_multiple_commands_delayed",
+                                            args), delay)
 
     def is_delayed_command(self, command):
         return self.DELAY_KEY in command and command[self.DELAY_KEY] > 0
@@ -89,51 +91,70 @@ class RunMultipleCommandsBase(object):
     def is_validate_arguments(self, commands, validate_context):
         if commands is not None:
             if len(commands) > 0:
-                if not validate_context or self.is_valid_command_and_context(commands):
+                if self.is_valid_command_and_context(commands):
                     return True
         return False
+
+    def is_valid_context(self, context):
+        if context is not None:
+            if context not in self.VALID_CONTEXT:
+                return False
+                sublime.error_message('Invalid command context "%s".'
+                                      % context)
 
     def is_valid_command_and_context(self, commands):
         for command in commands:
             if 'command' not in command:
-                sublime.error_message("One or more commands are missing a command name")
+                sublime.error_message("One or more commands are missing a " +
+                                      "command name")
                 return False
             if 'context' in command:
                 context_name = command['context']
-                if context_name not in self.VALID_CONTEXT:
+                if self.is_valid_context(context_name):
                     return False
-                    sublime.error_message('Invalid command context "%s".' % context_name)
 
         return True
 
 
-class RunMultipleCommandsFromFile(sublime_plugin.WindowCommand, RunMultipleCommandsBase):
+class RunMultipleCommandsFromFile(sublime_plugin.WindowCommand,
+                                  RunMultipleCommandsBase):
 
     def __init__(self, window):
         super(RunMultipleCommandsFromFile, self).__init__(window)
 
     def run(self, file_name=None):
-        if file_name is not None:
-            content = self.get_file_content(file_name)
-            commands = self.from_json(content)
+        if file_name is None:
+            return
+        content = self.get_file_content(file_name)
+        if content is None:
+            return
+
+        commands = self.from_json(content)
         self.run_multiple_commands(commands, True)
 
     def get_file_content(self, file_name):
-        content = None
-        if os.path.exists(file_name):
-            with codecs.open(file_name, "r") as file_obj:
-                content = file_obj.read()
+        match = re.match(r"Packages/([^/]+)/(.+)", file_name)
+        if match:
+            content = get_resource(match.group(1), match.group(2))
+        else:
+            if os.path.exists(file_name):
+                with codecs.open(file_name, "r") as file_obj:
+                    content = file_obj.read()
+            else:
+                sublime.error_message("Invalid path specified.")
         return content
 
     def from_json(self, content):
         if content is not None:
             try:
                 return json.loads(content)
-            except ex:
+            except Exception:
                 pass
         return None
 
-class RunMultipleCommands(sublime_plugin.WindowCommand, RunMultipleCommandsBase):
+
+class RunMultipleCommands(sublime_plugin.WindowCommand,
+                          RunMultipleCommandsBase):
 
     def __init__(self, window):
         super(RunMultipleCommands, self).__init__(window)
@@ -141,11 +162,12 @@ class RunMultipleCommands(sublime_plugin.WindowCommand, RunMultipleCommandsBase)
     def run(self, commands=None):
         self.run_multiple_commands(commands, True)
 
-class RunMultipleCommandsDelayed(sublime_plugin.WindowCommand, RunMultipleCommandsBase):
+
+class RunMultipleCommandsDelayed(sublime_plugin.WindowCommand,
+                                 RunMultipleCommandsBase):
 
     def __init__(self, window):
         super(RunMultipleCommandsDelayed, self).__init__(window)
 
     def run(self, commands):
-        print(commands)
         self.run_multiple_commands(commands, False)

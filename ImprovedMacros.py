@@ -20,4 +20,3 @@ if VERSION > 3000:
 else:
     from improved_macros import reloader
     from improved_macros.run_multiple_commands import *
-

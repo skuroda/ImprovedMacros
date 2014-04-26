@@ -23,6 +23,8 @@ else:
             reload_mods.append(mod)
 
 mods_load_order = [
+    '.'
+    '.package_resources'
     '.run_multiple_commands'
 ]
 

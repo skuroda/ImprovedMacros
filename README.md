@@ -89,3 +89,7 @@ Below is the content of `test.macro`
         },
         "delay": 1000
     }]
+
+## Notes
+
+Thank you to sashabe and nilium from the ST forum.

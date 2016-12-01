@@ -5,12 +5,10 @@ This plugin is incomplete. Macro recording, which is the general goal of this pl
 Note it may be necessary to restart the editor after installing the plugin.
 
 ### Package Control
-This plugin is not yet available as part of the repository list for Package Control. However, it can be manually added. To do so:
+Installation through [package control](http://wbond.net/sublime_packages/package_control) is recommended. It will handle updating your packages as they become available. To install, do the following.
 
-1. In the Command Palette, search for `Package Control: Add Repository`.
-2. In the input panel, enter `https://github.com/skuroda/ImprovedMacros`.
-3. In the Command Palette, search for "Package Control: Install Package`"
-4. Search for `ImprovedMacros` in the plugin list.
+* In the Command Palette, enter `Package Control: Install Package`
+* Search for `ImprovedMacros` to see install the plugin.
 
 ### Manual
 Clone or copy this repository into the packages directory. By default, the Package directory is located at:

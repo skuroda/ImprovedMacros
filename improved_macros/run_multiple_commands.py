@@ -72,7 +72,7 @@ class RunMultipleCommandsBase(object):
         if content is not None:
             try:
                 return json.loads(content)
-            except ex:
+            except ValueError:
                 pass
         return None
 
